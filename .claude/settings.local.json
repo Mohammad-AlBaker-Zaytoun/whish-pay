@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b \"C:\\\\Users\\\\www2m\\\\OneDrive\\\\Documents\\\\GitHub\\\\WHISH_NPM\")",
+      "Bash(dir:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm test)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint)",
+      "Bash(npm version:*)",
+      "Bash(npm publish)"
+    ]
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "name": "whish-pay",
+  "version": "1.0.1",
+  "description": "Whish Money payment gateway SDK for Node.js - Simple, type-safe, zero dependencies",
+  "author": "",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "whish",
+    "whish-money",
+    "whish-pay",
+    "payment",
+    "payment-gateway",
+    "lebanon",
+    "lbp",
+    "usd",
+    "aed",
+    "e-wallet",
+    "fintech",
+    "checkout"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay"
+  },
+  "bugs": {
+    "url": "https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.1"
+  }
+}
