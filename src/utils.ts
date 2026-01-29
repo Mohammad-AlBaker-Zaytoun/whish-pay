@@ -155,7 +155,9 @@ export function validatePaymentRequest(request: PaymentRequest): void {
  * @returns 'production' if NODE_ENV is 'production', otherwise 'sandbox'
  */
 export function getEnvironmentFromNodeEnv(): 'sandbox' | 'production' {
-  return process.env.NODE_ENV === 'production' ? 'production' : 'sandbox';
+  // Safe access for environments where process might not be defined
+  const nodeEnv = typeof process !== 'undefined' && process.env ? process.env.NODE_ENV : undefined;
+  return nodeEnv === 'production' ? 'production' : 'sandbox';
 }
 
 /**

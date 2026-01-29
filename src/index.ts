@@ -65,6 +65,7 @@ export {
   isValidCurrency,
   validatePaymentRequest,
   parseCallbackUrl,
+  getEnvironmentFromNodeEnv,
 } from './utils';
 
 // Constants

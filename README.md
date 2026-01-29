@@ -3,6 +3,8 @@
 > Whish Money Payment Gateway SDK for Node.js - Simple, type-safe, zero dependencies
 
 [![npm version](https://img.shields.io/npm/v/whish-pay.svg)](https://www.npmjs.com/package/whish-pay)
+[![npm downloads](https://img.shields.io/npm/dm/whish-pay.svg)](https://www.npmjs.com/package/whish-pay)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A lightweight, framework-agnostic SDK for integrating [Whish Money](https://whish.money) payments into your Node.js application. Works with Next.js, Express, Fastify, Hono, or any other Node.js backend.
@@ -157,9 +159,9 @@ const externalId = whish.generateExternalId();
 Validates payment amounts match within tolerance.
 
 ```typescript
-// Default tolerance: USD = 0.01, LBP = 100
+// Default tolerance: USD/AED = 0.02, LBP = 100
 const isValid = whish.validateAmount(99.99, 100, 'USD'); // true
-const isValid = whish.validateAmount(99.98, 100, 'USD'); // false
+const isValid = whish.validateAmount(99.97, 100, 'USD'); // false
 
 // Custom tolerance
 const isValid = whish.validateAmount(99, 100, 'USD', 1); // true

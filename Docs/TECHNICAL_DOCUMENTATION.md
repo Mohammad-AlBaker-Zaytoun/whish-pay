@@ -1292,7 +1292,7 @@ export type {
 | Property | Value |
 |----------|-------|
 | Package Name | `whish-pay` |
-| Version | 1.0.0 |
+| Version | 1.0.3 |
 | License | MIT |
 | Node.js | >= 18.0.0 |
 | TypeScript | >= 5.0 |

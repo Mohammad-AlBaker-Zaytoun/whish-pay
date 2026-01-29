@@ -1,17 +1,19 @@
 {
   "name": "whish-pay",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Whish Money payment gateway SDK for Node.js - Simple, type-safe, zero dependencies",
-  "author": "",
+  "author": "Zaytoun Solutions <info@zaytounsolutions.com>",
   "license": "MIT",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "type": "module",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -36,11 +38,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay"
+    "url": "git+https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay.git"
   },
   "bugs": {
     "url": "https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay/issues"
   },
+  "homepage": "https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay#readme",
   "engines": {
     "node": ">=18.0.0"
   },

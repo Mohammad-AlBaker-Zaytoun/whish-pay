@@ -157,9 +157,9 @@ export interface StatusResponse {
   transactionId?: string;
 
   /**
-   * Additional fields from Whish API
+   * Additional data from Whish API response
    */
-  [key: string]: unknown;
+  additionalData?: Record<string, unknown>;
 }
 
 /**

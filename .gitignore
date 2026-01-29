@@ -36,3 +36,9 @@ package-lock.json
 # Misc
 *.bak
 *.tmp
+
+# Development scripts
+*.bat
+
+# Claude AI
+.claude/

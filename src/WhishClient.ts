@@ -4,6 +4,7 @@ import {
   WhishApiError,
   WhishNetworkError,
   WhishParseError,
+  ERROR_CODES,
 } from './errors';
 import {
   generateExternalId,
@@ -194,7 +195,7 @@ export class WhishClient {
     if (!collectUrl) {
       throw new WhishApiError(
         'No payment URL returned from Whish API',
-        'NO_PAYMENT_URL',
+        ERROR_CODES.NO_PAYMENT_URL,
         response.dialog
       );
     }
@@ -244,13 +245,7 @@ export class WhishClient {
       { currency, externalId }
     );
 
-    if (!response.status) {
-      throw new WhishApiError(
-        response.dialog?.message || 'Failed to get payment status',
-        response.code || 'API_ERROR',
-        response.dialog
-      );
-    }
+    this.throwIfApiFailed(response, 'Failed to get payment status');
 
     return response.data;
   }
@@ -282,13 +277,7 @@ export class WhishClient {
       { amount, currency }
     );
 
-    if (!response.status) {
-      throw new WhishApiError(
-        response.dialog?.message || 'Failed to get rate',
-        response.code || 'API_ERROR',
-        response.dialog
-      );
-    }
+    this.throwIfApiFailed(response, 'Failed to get rate');
 
     return response.data;
   }
@@ -316,13 +305,7 @@ export class WhishClient {
       'GET'
     );
 
-    if (!response.status) {
-      throw new WhishApiError(
-        response.dialog?.message || 'Failed to get balance',
-        response.code || 'API_ERROR',
-        response.dialog
-      );
-    }
+    this.throwIfApiFailed(response, 'Failed to get balance');
 
     return response.data;
   }
@@ -339,6 +322,22 @@ export class WhishClient {
    */
   getBaseUrl(): string {
     return this.baseUrl;
+  }
+
+  /**
+   * Throws a WhishApiError if the API response indicates failure
+   */
+  private throwIfApiFailed(
+    response: { status: boolean; code: string | null; dialog: { title?: string; message?: string } | null },
+    defaultMessage: string
+  ): void {
+    if (!response.status) {
+      throw new WhishApiError(
+        response.dialog?.message ?? defaultMessage,
+        response.code ?? ERROR_CODES.API_ERROR,
+        response.dialog
+      );
+    }
   }
 
   /**
@@ -377,9 +376,8 @@ export class WhishClient {
       // Check content type
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
         throw new WhishParseError(
-          `Unexpected response type: ${contentType}. Response: ${text.substring(0, 200)}`
+          `Unexpected response type: ${contentType ?? 'unknown'}. Expected application/json.`
         );
       }
 
