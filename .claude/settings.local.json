@@ -9,7 +9,11 @@
       "Bash(npm run typecheck:*)",
       "Bash(npm run lint)",
       "Bash(npm version:*)",
-      "Bash(npm publish)"
+      "Bash(npm publish)",
+      "Bash(npm pack:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run test)",
+      "Bash(npm view:*)"
     ]
   }
 }
