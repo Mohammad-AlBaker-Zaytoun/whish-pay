@@ -168,6 +168,26 @@ if (result.success) {
 }
 ```
 
+**Error handling**: `createPayment()` uses result-style handling for Whish business failures:
+
+| Scenario | Behavior |
+|----------|----------|
+| Request validation failed | throws `WhishValidationError` |
+| Network or timeout error | throws `WhishNetworkError` |
+| Non-2xx HTTP response | throws `WhishApiError` with `httpStatus` |
+| Whish rejects the request (`status: false`) | returns `{ success: false, code, dialog }` |
+
+```typescript
+const result = await whish.createPayment({ ... });
+
+if (!result.success) {
+  // Whish rejected the payment request — inspect the reason
+  return { error: result.dialog?.message, code: result.code };
+}
+
+// result.collectUrl is available here — redirect the user
+```
+
 **Returns** `PaymentResponse`:
 
 | Field | Type | Description |
@@ -234,7 +254,7 @@ console.log(balanceDetails.balance);
 
 ### `generateExternalId()`
 
-Generates a cryptographically secure, unique numeric ID suitable for use as `externalId`. Combines a millisecond timestamp with a random component.
+Generates a high-entropy numeric external ID suitable for most payment flows. Combines a millisecond timestamp, a process-local monotonic counter, and a random digit to minimise collision risk even under rapid repeated calls within the same process.
 
 ```typescript
 const externalId = whish.generateExternalId();
@@ -242,6 +262,8 @@ const externalId = whish.generateExternalId();
 ```
 
 Store this ID in your database alongside the order before calling `createPayment`.
+
+> **Note:** For very high-volume systems, consider using your database or order ID as `externalId` if Whish allows it — that eliminates any collision concern entirely.
 
 ---
 
@@ -647,8 +669,10 @@ Key principles:
 - Use HTTPS for all callback and redirect URLs
 - Never mark an order as paid based on a redirect URL or query parameters alone
 
-To report a security issue with this package, open an issue at
-[GitHub Issues](https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay/issues).
+To report a **security vulnerability**, do not open a public issue. Use GitHub Security Advisories:
+<https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay/security/advisories/new>
+
+For normal bugs, feature requests, and documentation issues, use [GitHub Issues](https://github.com/Mohammad-AlBaker-Zaytoun/whish-pay/issues).
 
 ---
 

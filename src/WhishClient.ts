@@ -373,20 +373,43 @@ export class WhishClient {
 
       clearTimeout(timeoutId);
 
-      // Check content type
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      const contentType = response.headers.get('content-type') ?? '';
+
+      if (!contentType.includes('application/json')) {
+        if (!response.ok) {
+          throw new WhishApiError(
+            `Whish API returned HTTP ${response.status}`,
+            ERROR_CODES.API_ERROR,
+            null,
+            response.status
+          );
+        }
         throw new WhishParseError(
-          `Unexpected response type: ${contentType ?? 'unknown'}. Expected application/json.`
+          `Unexpected response type: ${contentType || 'unknown'}. Expected application/json.`
         );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as {
+        dialog?: { title?: string; message?: string } | null;
+        code?: string | null;
+      };
+
+      if (!response.ok) {
+        const dialog = data?.dialog ?? null;
+        const code = data?.code ?? ERROR_CODES.API_ERROR;
+        throw new WhishApiError(
+          dialog?.message ?? `Whish API returned HTTP ${response.status}`,
+          code,
+          dialog,
+          response.status
+        );
+      }
+
       return data as T;
     } catch (error) {
       clearTimeout(timeoutId);
 
-      if (error instanceof WhishParseError) {
+      if (error instanceof WhishParseError || error instanceof WhishApiError) {
         throw error;
       }
 

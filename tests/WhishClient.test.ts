@@ -97,6 +97,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -117,6 +119,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -137,6 +141,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: false,
@@ -166,6 +172,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -191,6 +199,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -221,6 +231,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -242,6 +254,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -261,6 +275,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -280,6 +296,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: false,
@@ -301,6 +319,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -322,6 +342,8 @@ describe('WhishClient', () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         headers: new Headers({ 'content-type': 'application/json' }),
         json: async () => ({
           status: true,
@@ -361,6 +383,116 @@ describe('WhishClient', () => {
       await expect(
         client.createPayment(validPaymentRequest)
       ).rejects.toThrow(WhishNetworkError);
+    });
+  });
+
+  describe('HTTP error handling', () => {
+    it('throws WhishApiError with httpStatus 400 and code from JSON body', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          code: 'INVALID_REQUEST',
+          dialog: { message: 'Invalid request parameters' },
+        }),
+      });
+
+      await expect(client.getPaymentStatus('USD', 123)).rejects.toMatchObject({
+        name: 'WhishApiError',
+        code: 'INVALID_REQUEST',
+        httpStatus: 400,
+      });
+    });
+
+    it('throws WhishApiError with httpStatus 401 for unauthorized', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          code: 'UNAUTHORIZED',
+          dialog: { message: 'Invalid credentials' },
+        }),
+      });
+
+      await expect(client.getPaymentStatus('USD', 123)).rejects.toMatchObject({
+        name: 'WhishApiError',
+        code: 'UNAUTHORIZED',
+        httpStatus: 401,
+      });
+    });
+
+    it('throws WhishApiError with httpStatus 500 for server error JSON', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          code: 'INTERNAL_ERROR',
+          dialog: { message: 'Server error' },
+        }),
+      });
+
+      await expect(client.createPayment(validPaymentRequest)).rejects.toMatchObject({
+        name: 'WhishApiError',
+        httpStatus: 500,
+      });
+    });
+
+    it('throws WhishApiError with httpStatus for HTTP 500 non-JSON response', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        headers: new Headers({ 'content-type': 'text/html' }),
+      });
+
+      await expect(client.createPayment(validPaymentRequest)).rejects.toMatchObject({
+        name: 'WhishApiError',
+        httpStatus: 500,
+      });
+    });
+
+    it('throws WhishParseError for HTTP 200 with non-JSON response', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: new Headers({ 'content-type': 'text/html' }),
+      });
+
+      const { WhishParseError: WPE } = await import('../src/errors');
+      await expect(client.createPayment(validPaymentRequest)).rejects.toThrow(WPE);
+    });
+
+    it('uses dialog.message as the error message when available', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          code: 'FORBIDDEN',
+          dialog: { message: 'Access denied' },
+        }),
+      });
+
+      const error = await client.getPaymentStatus('USD', 123).catch((e: unknown) => e);
+      expect(error).toMatchObject({
+        name: 'WhishApiError',
+        message: 'Access denied',
+        httpStatus: 403,
+      });
     });
   });
 });

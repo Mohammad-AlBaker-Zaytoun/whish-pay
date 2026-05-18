@@ -26,12 +26,13 @@ describe('generateExternalId', () => {
     }
   });
 
-  it('generates mostly unique IDs with sufficient entropy', () => {
+  it('generates unique IDs even when called rapidly in a tight loop', () => {
     const ids = new Set<number>();
     for (let i = 0; i < 100; i++) {
       ids.add(generateExternalId());
     }
-    expect(ids.size).toBeGreaterThanOrEqual(90);
+    // The monotonic counter guarantees all 100 are unique within a single process run
+    expect(ids.size).toBe(100);
   });
 
   it('generates non-empty values', () => {
@@ -238,6 +239,70 @@ describe('parseCallbackUrl', () => {
 
     expect(result.externalId).toBe(123);
     expect(result.currency).toBeNull();
+  });
+
+  it('returns null externalId for alphanumeric value', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=123abc&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for leading-alpha value', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=abc123&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for negative value', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=-123&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for decimal value', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=1.5&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for empty string', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for zero', () => {
+    const result = parseCallbackUrl(
+      'https://example.com/callback?externalId=0&currency=USD'
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null externalId for value exceeding MAX_SAFE_INTEGER', () => {
+    const result = parseCallbackUrl(
+      `https://example.com/callback?externalId=9007199254740992&currency=USD`
+    );
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns valid externalId for MAX_SAFE_INTEGER itself', () => {
+    const result = parseCallbackUrl(
+      `https://example.com/callback?externalId=${Number.MAX_SAFE_INTEGER}&currency=USD`
+    );
+    expect(result.externalId).toBe(Number.MAX_SAFE_INTEGER);
+    expect(result.currency).toBe('USD');
   });
 });
 

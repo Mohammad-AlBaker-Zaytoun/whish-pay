@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-05-19
+
+### Fixed
+
+- **README security section** now correctly directs vulnerability reports to GitHub Security
+  Advisories instead of public GitHub Issues, matching SECURITY.md.
+- **`parseCallbackUrl()`** now uses strict integer parsing (`parseExternalId()`) that rejects
+  malformed, alphanumeric, negative, decimal, zero, and unsafe-integer `externalId` values.
+  Previously `parseInt()` would silently accept values like `"123abc"` as `123`.
+- **Non-2xx HTTP responses** in `makeRequest()` now throw `WhishApiError` with `httpStatus` set,
+  rather than attempting to process an error body as a success response.
+
+### Changed
+
+- **`generateExternalId()`** now combines a millisecond timestamp, a process-local monotonic
+  counter (0–99), and a single random digit. This eliminates same-millisecond collisions for the
+  first 100 rapid calls within a single process. Wording updated from "cryptographically secure
+  unique" to "high-entropy numeric external ID suitable for most payment flows".
+- **`createPayment()` error behaviour** is now explicitly documented in the README: validation
+  errors throw, network/HTTP errors throw, and Whish business failures (`status: false`) return
+  `{ success: false, code, dialog }`.
+
+### Added
+
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — runs typecheck, lint, build, and tests
+  across Node.js 18 and 20 on every push and pull request to `main`.
+- **Additional tests** for strict `parseCallbackUrl()` parsing: alphanumeric, negative, decimal,
+  zero, empty, and unsafe-integer `externalId` values.
+- **Additional tests** for HTTP error handling in `makeRequest()`: 400, 401, 500 JSON responses,
+  500 non-JSON, 200 non-JSON, and `dialog.message` propagation.
+- **`ok: true`** added to all success mock responses in `WhishClient.test.ts` to correctly
+  simulate HTTP 200 semantics after the non-2xx handling fix.
+
+---
+
 ## [1.1.0] - 2026-05-19
 
 ### Added

@@ -3,41 +3,37 @@ import { DEFAULTS, SUPPORTED_CURRENCIES } from './constants';
 import { WhishValidationError } from './errors';
 import type { WhishCurrency, PaymentRequest } from './types';
 
+// Process-local monotonic counter for same-millisecond collision avoidance (wraps at 100)
+let _idCounter = 0;
+
 /**
- * Generates a cryptographically secure unique external ID for payments.
+ * Generates a high-entropy numeric external ID suitable for most payment flows.
  *
- * The ID combines a millisecond timestamp with a random component to ensure
- * uniqueness even for simultaneous payment requests.
+ * The ID combines a millisecond timestamp, a process-local monotonic counter,
+ * and a random digit to minimise collision risk even for rapid repeated calls.
  *
  * @returns A unique numeric ID safe for use as Whish externalId
  *
  * @example
  * ```typescript
  * const externalId = generateExternalId();
- * // Returns something like: 1706652000000123456
+ * // Returns something like: 1706652000000123
  * ```
  */
 export function generateExternalId(): number {
-  // Use millisecond precision timestamp (13 digits)
   const timestamp = Date.now();
 
-  // Generate cryptographically secure 4-byte random number
-  const randomBytes = crypto.randomBytes(4);
-  const randomValue = randomBytes.readUInt32BE(0);
+  // Monotonic counter (00–99) ensures distinct values within the same millisecond
+  const counter = _idCounter++ % 100;
 
-  // Scale random to 6 digits (0 to 999,999) to stay within safe integer range
-  // timestamp (13 digits) * 1,000,000 + random (6 digits) = 19 digits max
-  // MAX_SAFE_INTEGER is ~9 * 10^15 (16 digits)
-  // So we use timestamp * 1000 + random % 1000 to stay safe
-  const randomComponent = randomValue % 1000;
+  // Single cryptographically random digit adds extra entropy
+  const randomDigit = crypto.randomBytes(1).readUInt8(0) % 10;
 
-  // Combine: timestamp (13 digits) * 1000 + random (3 digits)
-  // This gives us 16 digits max, within safe integer range
-  const externalId = timestamp * 1000 + randomComponent;
+  // Combine: timestamp (13 digits) * 1000 + counter (2 digits) * 10 + random digit (0–9)
+  // Maximum: ~1748260400000 * 1000 + 990 + 9 = 1748260400000999 < MAX_SAFE_INTEGER
+  const externalId = timestamp * 1000 + counter * 10 + randomDigit;
 
-  // Verify it fits in JavaScript's safe integer range (should always be true now)
   if (externalId > DEFAULTS.maxSafeInteger) {
-    // Fallback: Just use timestamp
     return timestamp;
   }
 
@@ -172,6 +168,20 @@ export function getEnvironmentFromNodeEnv(): 'sandbox' | 'production' {
  * // Returns: { externalId: 123, currency: 'USD' }
  * ```
  */
+/**
+ * Parses a string value as a strictly valid positive integer externalId.
+ * Rejects any value containing non-digit characters, negative numbers,
+ * zero, decimals, or values exceeding Number.MAX_SAFE_INTEGER.
+ */
+function parseExternalId(value: string | null): number | null {
+  if (!value) return null;
+  if (!/^\d+$/.test(value)) return null;
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed)) return null;
+  if (parsed <= 0) return null;
+  return parsed;
+}
+
 export function parseCallbackUrl(url: string): {
   externalId: number | null;
   currency: WhishCurrency | null;
@@ -182,14 +192,14 @@ export function parseCallbackUrl(url: string): {
     const parsedUrl = new URL(url);
     const params = parsedUrl.searchParams;
 
-    const externalIdStr = params.get('externalId');
-    const currencyStr = params.get('currency');
-
     return {
-      externalId: externalIdStr ? parseInt(externalIdStr, 10) : null,
-      currency: currencyStr && isValidCurrency(currencyStr) ? currencyStr : null,
-      errorCode: params.get('errorCode') || undefined,
-      errorMessage: params.get('errorMessage') || undefined,
+      externalId: parseExternalId(params.get('externalId')),
+      currency: (() => {
+        const c = params.get('currency');
+        return c && isValidCurrency(c) ? c : null;
+      })(),
+      errorCode: params.get('errorCode') ?? undefined,
+      errorMessage: params.get('errorMessage') ?? undefined,
     };
   } catch {
     return {
