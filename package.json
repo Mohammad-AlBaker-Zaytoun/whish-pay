@@ -1,6 +1,6 @@
 {
   "name": "whish-pay",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Unofficial Whish Money payment client for Node.js — type-safe, zero dependencies",
   "author": "Zaytoun Solutions <info@zaytounsolutions.com>",
   "license": "MIT",
