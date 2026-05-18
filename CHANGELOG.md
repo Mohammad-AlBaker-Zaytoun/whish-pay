@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-19
+
+### Added
+
+- **Unofficial disclaimer** prominently in README and package description, clarifying this package
+  is not affiliated with or endorsed by Whish Money.
+- **Production safety checklist** in README — 13-point checklist for going live safely.
+- **Next.js App Router examples** in `examples/next-app-router/` — create-payment route,
+  success/failure callback handlers, and a client-side PayWithWhishButton component.
+- **SECURITY.md** — security policy, secret-handling guidance, and responsible disclosure instructions.
+- Additional edge-case tests for `validateAmount` (NaN, Infinity, zero, negative inputs).
+- Additional tests for `getPaymentStatus` with `pending` and `failed` statuses.
+- Test coverage for `createPayment` request body correctness.
+
+### Changed
+
+- README fully rewritten with clearer structure: disclaimer, callback verification guidance,
+  corrected flow diagram, framework examples, error code table, and types reference.
+- Callback handling section now explicitly warns that redirect/callback URLs alone are not
+  proof of payment — `getPaymentStatus()` must be called to confirm.
+- Package description updated to "Unofficial Whish Money payment client for Node.js" to
+  accurately reflect the package's unofficial status.
+
+### Security
+
+- Added explicit guidance: never expose `WHISH_SECRET` client-side or in logs.
+- Documented the correct server-side payment verification flow to prevent order fraud.
+- Clarified that redirect query parameters must not be trusted as proof of payment.
+
+---
+
 ## [1.0.3] - 2025-01-29
 
 ### Added
@@ -58,12 +89,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release of `whish-pay`
 - `WhishClient` class with full Whish Money API support
-- `createPayment()` - Create W2W payments and get payment URL
-- `getPaymentStatus()` - Check payment status by external ID
-- `getRate()` - Get current rate/fees for payments
-- `getBalance()` - Get account balance
-- `generateExternalId()` - Cryptographically secure unique ID generation
-- `validateAmount()` - Amount validation with currency tolerance
+- `createPayment()` — Create W2W payments and get payment URL
+- `getPaymentStatus()` — Check payment status by external ID
+- `getRate()` — Get current rate/fees for payments
+- `getBalance()` — Get account balance
+- `generateExternalId()` — Cryptographically secure unique ID generation
+- `validateAmount()` — Amount validation with currency tolerance
 - Full TypeScript support with comprehensive type definitions
 - Custom error classes for better error handling
 - ESM and CommonJS dual builds

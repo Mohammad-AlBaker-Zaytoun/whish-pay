@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   generateExternalId,
   validateAmount,
@@ -16,8 +16,6 @@ describe('generateExternalId', () => {
 
     expect(typeof id1).toBe('number');
     expect(typeof id2).toBe('number');
-    // Note: With 1000 random values possible, consecutive calls might rarely collide
-    // but should generally be different
   });
 
   it('generates IDs within safe integer range', () => {
@@ -33,8 +31,13 @@ describe('generateExternalId', () => {
     for (let i = 0; i < 100; i++) {
       ids.add(generateExternalId());
     }
-    // Most should be unique (allow for rare timestamp+random collisions)
     expect(ids.size).toBeGreaterThanOrEqual(90);
+  });
+
+  it('generates non-empty values', () => {
+    const id = generateExternalId();
+    expect(id).toBeTruthy();
+    expect(id).not.toBe(0);
   });
 });
 
@@ -73,6 +76,30 @@ describe('validateAmount', () => {
     expect(validateAmount(99.5, 100, 'USD', 0.5)).toBe(true);
     expect(validateAmount(99.4, 100, 'USD', 0.5)).toBe(false);
   });
+
+  it('returns false for NaN received amount', () => {
+    expect(validateAmount(NaN, 100, 'USD')).toBe(false);
+  });
+
+  it('returns false for NaN expected amount', () => {
+    expect(validateAmount(100, NaN, 'USD')).toBe(false);
+  });
+
+  it('returns false for Infinity received amount', () => {
+    expect(validateAmount(Infinity, 100, 'USD')).toBe(false);
+  });
+
+  it('returns false for negative received amount compared to positive expected', () => {
+    expect(validateAmount(-100, 100, 'USD')).toBe(false);
+  });
+
+  it('returns false for zero received amount when expected is positive', () => {
+    expect(validateAmount(0, 100, 'USD')).toBe(false);
+  });
+
+  it('returns true for zero compared to zero', () => {
+    expect(validateAmount(0, 0, 'USD')).toBe(true);
+  });
 });
 
 describe('isValidCurrency', () => {
@@ -85,7 +112,7 @@ describe('isValidCurrency', () => {
   it('returns false for invalid currencies', () => {
     expect(isValidCurrency('EUR')).toBe(false);
     expect(isValidCurrency('GBP')).toBe(false);
-    expect(isValidCurrency('usd')).toBe(false); // case-sensitive
+    expect(isValidCurrency('usd')).toBe(false);
     expect(isValidCurrency('')).toBe(false);
   });
 });
@@ -118,9 +145,15 @@ describe('validatePaymentRequest', () => {
     ).toThrow(WhishValidationError);
   });
 
+  it('throws for NaN amount', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, amount: NaN })
+    ).toThrow(WhishValidationError);
+  });
+
   it('throws for invalid currency', () => {
     expect(() =>
-      validatePaymentRequest({ ...validRequest, currency: 'EUR' as any })
+      validatePaymentRequest({ ...validRequest, currency: 'EUR' as never })
     ).toThrow(WhishValidationError);
   });
 
@@ -130,9 +163,15 @@ describe('validatePaymentRequest', () => {
     ).toThrow(WhishValidationError);
   });
 
-  it('throws for invalid external ID', () => {
+  it('throws for invalid external ID type', () => {
     expect(() =>
-      validatePaymentRequest({ ...validRequest, externalId: 'abc' as any })
+      validatePaymentRequest({ ...validRequest, externalId: 'abc' as never })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for external ID exceeding MAX_SAFE_INTEGER', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: Number.MAX_SAFE_INTEGER + 1 })
     ).toThrow(WhishValidationError);
   });
 
@@ -164,7 +203,21 @@ describe('parseCallbackUrl', () => {
     expect(result.errorMessage).toBe('User cancelled');
   });
 
-  it('returns null for missing parameters', () => {
+  it('returns null for missing externalId', () => {
+    const result = parseCallbackUrl('https://example.com/callback?currency=USD');
+
+    expect(result.externalId).toBeNull();
+    expect(result.currency).toBe('USD');
+  });
+
+  it('returns null for missing currency', () => {
+    const result = parseCallbackUrl('https://example.com/callback?externalId=123');
+
+    expect(result.externalId).toBe(123);
+    expect(result.currency).toBeNull();
+  });
+
+  it('returns null for all params when URL has no query string', () => {
     const result = parseCallbackUrl('https://example.com/callback');
 
     expect(result.externalId).toBeNull();
@@ -178,7 +231,7 @@ describe('parseCallbackUrl', () => {
     expect(result.currency).toBeNull();
   });
 
-  it('returns null currency for unsupported currency', () => {
+  it('returns null currency for unsupported currency code', () => {
     const result = parseCallbackUrl(
       'https://example.com/callback?externalId=123&currency=EUR'
     );

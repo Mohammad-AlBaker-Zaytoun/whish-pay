@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { WhishClient } from '../src/WhishClient';
 import {
   WhishConfigError,
@@ -6,9 +6,8 @@ import {
   WhishNetworkError,
   WhishValidationError,
 } from '../src/errors';
-import { WHISH_API_URLS } from '../src/constants';
+import { WHISH_API_URLS, WHISH_ENDPOINTS } from '../src/constants';
 
-// Mock fetch globally
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
@@ -17,6 +16,17 @@ describe('WhishClient', () => {
     channel: '10195189',
     secret: 'test_secret',
     websiteUrl: 'https://example.com',
+  };
+
+  const validPaymentRequest = {
+    amount: 100,
+    currency: 'USD' as const,
+    invoice: 'Order #123',
+    externalId: 1234567890,
+    successCallbackUrl: 'https://example.com/api/success',
+    failureCallbackUrl: 'https://example.com/api/failure',
+    successRedirectUrl: 'https://example.com/success',
+    failureRedirectUrl: 'https://example.com/failure',
   };
 
   beforeEach(() => {
@@ -61,12 +71,13 @@ describe('WhishClient', () => {
   });
 
   describe('generateExternalId', () => {
-    it('generates unique IDs', () => {
+    it('generates non-empty unique numeric IDs', () => {
       const client = new WhishClient(validConfig);
       const id1 = client.generateExternalId();
       const id2 = client.generateExternalId();
 
       expect(typeof id1).toBe('number');
+      expect(id1).toBeGreaterThan(0);
       expect(id1).not.toBe(id2);
     });
   });
@@ -82,17 +93,6 @@ describe('WhishClient', () => {
   });
 
   describe('createPayment', () => {
-    const validPaymentRequest = {
-      amount: 100,
-      currency: 'USD' as const,
-      invoice: 'Order #123',
-      externalId: 1234567890,
-      successCallbackUrl: 'https://example.com/api/success',
-      failureCallbackUrl: 'https://example.com/api/failure',
-      successRedirectUrl: 'https://example.com/success',
-      failureRedirectUrl: 'https://example.com/failure',
-    };
-
     it('creates payment successfully', async () => {
       const client = new WhishClient(validConfig);
 
@@ -154,7 +154,7 @@ describe('WhishClient', () => {
       expect(result.dialog?.message).toBe('Amount is invalid');
     });
 
-    it('throws WhishValidationError for invalid request', async () => {
+    it('throws WhishValidationError for invalid amount', async () => {
       const client = new WhishClient(validConfig);
 
       await expect(
@@ -162,7 +162,7 @@ describe('WhishClient', () => {
       ).rejects.toThrow(WhishValidationError);
     });
 
-    it('sends correct headers', async () => {
+    it('sends correct endpoint, method, and headers', async () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
@@ -175,23 +175,49 @@ describe('WhishClient', () => {
 
       await client.createPayment(validPaymentRequest);
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            channel: validConfig.channel,
-            secret: validConfig.secret,
-            websiteurl: validConfig.websiteUrl,
-          }),
-        })
-      );
+      const [calledUrl, calledOptions] = mockFetch.mock.calls[0] as [string, RequestInit];
+
+      expect(calledUrl).toBe(`${WHISH_API_URLS.sandbox}${WHISH_ENDPOINTS.createPayment}`);
+      expect(calledOptions.method).toBe('POST');
+      expect(calledOptions.headers).toMatchObject({
+        'Content-Type': 'application/json',
+        channel: validConfig.channel,
+        secret: validConfig.secret,
+        websiteurl: validConfig.websiteUrl,
+      });
+    });
+
+    it('sends correct request body', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          status: true,
+          data: { collectUrl: 'https://whish.money/pay/test' },
+        }),
+      });
+
+      await client.createPayment(validPaymentRequest);
+
+      const [, calledOptions] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(calledOptions.body as string);
+
+      expect(body).toMatchObject({
+        amount: validPaymentRequest.amount,
+        currency: validPaymentRequest.currency,
+        invoice: validPaymentRequest.invoice,
+        externalId: validPaymentRequest.externalId,
+        successCallbackUrl: validPaymentRequest.successCallbackUrl,
+        failureCallbackUrl: validPaymentRequest.failureCallbackUrl,
+        successRedirectUrl: validPaymentRequest.successRedirectUrl,
+        failureRedirectUrl: validPaymentRequest.failureRedirectUrl,
+      });
     });
   });
 
   describe('getPaymentStatus', () => {
-    it('returns payment status successfully', async () => {
+    it('returns success status', async () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
@@ -209,9 +235,48 @@ describe('WhishClient', () => {
 
       expect(result.collectStatus).toBe('success');
       expect(result.amount).toBe(100);
+      expect(result.currency).toBe('USD');
     });
 
-    it('throws WhishApiError for failed status check', async () => {
+    it('returns pending status', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          status: true,
+          code: null,
+          dialog: null,
+          extra: null,
+          data: { collectStatus: 'pending', amount: 100, currency: 'USD' },
+        }),
+      });
+
+      const result = await client.getPaymentStatus('USD', 1234567890);
+
+      expect(result.collectStatus).toBe('pending');
+    });
+
+    it('returns failed status', async () => {
+      const client = new WhishClient(validConfig);
+
+      mockFetch.mockResolvedValueOnce({
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: async () => ({
+          status: true,
+          code: null,
+          dialog: null,
+          extra: null,
+          data: { collectStatus: 'failed', amount: 100, currency: 'USD' },
+        }),
+      });
+
+      const result = await client.getPaymentStatus('USD', 1234567890);
+
+      expect(result.collectStatus).toBe('failed');
+    });
+
+    it('throws WhishApiError for failed API response', async () => {
       const client = new WhishClient(validConfig);
 
       mockFetch.mockResolvedValueOnce({
@@ -280,20 +345,11 @@ describe('WhishClient', () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       await expect(
-        client.createPayment({
-          amount: 100,
-          currency: 'USD',
-          invoice: 'Test',
-          externalId: 123,
-          successCallbackUrl: 'https://example.com/success',
-          failureCallbackUrl: 'https://example.com/failure',
-          successRedirectUrl: 'https://example.com/success',
-          failureRedirectUrl: 'https://example.com/failure',
-        })
+        client.createPayment(validPaymentRequest)
       ).rejects.toThrow(WhishNetworkError);
     });
 
-    it('throws WhishNetworkError for timeout', async () => {
+    it('throws WhishNetworkError for timeout (AbortError)', async () => {
       const client = new WhishClient({ ...validConfig, timeout: 100 });
 
       mockFetch.mockImplementationOnce(() => {
@@ -303,16 +359,7 @@ describe('WhishClient', () => {
       });
 
       await expect(
-        client.createPayment({
-          amount: 100,
-          currency: 'USD',
-          invoice: 'Test',
-          externalId: 123,
-          successCallbackUrl: 'https://example.com/success',
-          failureCallbackUrl: 'https://example.com/failure',
-          successRedirectUrl: 'https://example.com/success',
-          failureRedirectUrl: 'https://example.com/failure',
-        })
+        client.createPayment(validPaymentRequest)
       ).rejects.toThrow(WhishNetworkError);
     });
   });

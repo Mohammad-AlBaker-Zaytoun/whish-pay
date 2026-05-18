@@ -1,7 +1,7 @@
 {
   "name": "whish-pay",
-  "version": "1.0.3",
-  "description": "Whish Money payment gateway SDK for Node.js - Simple, type-safe, zero dependencies",
+  "version": "1.1.0",
+  "description": "Unofficial Whish Money payment client for Node.js — type-safe, zero dependencies",
   "author": "Zaytoun Solutions <info@zaytounsolutions.com>",
   "license": "MIT",
   "type": "module",
@@ -20,7 +20,8 @@
     "dist",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "SECURITY.md"
   ],
   "keywords": [
     "whish",
