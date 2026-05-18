@@ -102,12 +102,13 @@ export class WhishClient {
   }
 
   /**
-   * Generates a cryptographically secure unique external ID for payments.
+   * Generates a high-entropy numeric external ID suitable for most payment flows.
    *
-   * The ID combines a timestamp with a random component to ensure uniqueness
-   * even for simultaneous payment requests.
+   * The ID combines a millisecond timestamp, a process-local monotonic counter,
+   * and a random digit to reduce collision risk for rapid repeated calls within
+   * the same process.
    *
-   * @returns A unique numeric ID safe for use as Whish externalId
+   * @returns A numeric ID safe for use as Whish externalId
    *
    * @example
    * ```typescript

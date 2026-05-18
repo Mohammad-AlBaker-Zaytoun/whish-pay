@@ -16,16 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Previously `parseInt()` would silently accept values like `"123abc"` as `123`.
 - **Non-2xx HTTP responses** in `makeRequest()` now throw `WhishApiError` with `httpStatus` set,
   rather than attempting to process an error body as a success response.
+- **`validatePaymentRequest()`** now correctly rejects non-finite, non-safe, decimal, zero, and
+  negative values for `amount` and `externalId`. Previously `Infinity`, `-Infinity`, decimals, and
+  negative `externalId` values were silently accepted.
 
 ### Changed
 
 - **`generateExternalId()`** now combines a millisecond timestamp, a process-local monotonic
   counter (0–99), and a single random digit. This eliminates same-millisecond collisions for the
-  first 100 rapid calls within a single process. Wording updated from "cryptographically secure
-  unique" to "high-entropy numeric external ID suitable for most payment flows".
+  first 100 rapid calls within a single process. JSDoc and README wording updated from
+  "cryptographically secure unique" to "high-entropy numeric external ID suitable for most payment
+  flows".
 - **`createPayment()` error behaviour** is now explicitly documented in the README: validation
   errors throw, network/HTTP errors throw, and Whish business failures (`status: false`) return
   `{ success: false, code, dialog }`.
+- **`prepublishOnly`** now runs `typecheck`, `lint`, `build`, and `test` to match the CI quality
+  gate and prevent accidental publishing with type or lint errors.
 
 ### Added
 

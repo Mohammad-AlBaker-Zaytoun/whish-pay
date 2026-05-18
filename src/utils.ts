@@ -99,8 +99,12 @@ export function isValidCurrency(currency: string): currency is WhishCurrency {
  * @throws WhishValidationError if validation fails
  */
 export function validatePaymentRequest(request: PaymentRequest): void {
-  if (!request.amount || request.amount <= 0) {
-    throw new WhishValidationError('Amount must be a positive number', 'amount');
+  if (
+    typeof request.amount !== 'number' ||
+    !Number.isFinite(request.amount) ||
+    request.amount <= 0
+  ) {
+    throw new WhishValidationError('Amount must be a finite positive number', 'amount');
   }
 
   if (!request.currency || !isValidCurrency(request.currency)) {
@@ -114,13 +118,13 @@ export function validatePaymentRequest(request: PaymentRequest): void {
     throw new WhishValidationError('Invoice must be a non-empty string', 'invoice');
   }
 
-  if (!request.externalId || typeof request.externalId !== 'number') {
-    throw new WhishValidationError('External ID must be a number', 'externalId');
-  }
-
-  if (request.externalId > DEFAULTS.maxSafeInteger) {
+  if (
+    typeof request.externalId !== 'number' ||
+    !Number.isSafeInteger(request.externalId) ||
+    request.externalId <= 0
+  ) {
     throw new WhishValidationError(
-      'External ID exceeds maximum safe integer',
+      'External ID must be a positive safe integer',
       'externalId'
     );
   }

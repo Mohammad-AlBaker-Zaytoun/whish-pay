@@ -134,7 +134,7 @@ describe('validatePaymentRequest', () => {
     expect(() => validatePaymentRequest(validRequest)).not.toThrow();
   });
 
-  it('throws for missing amount', () => {
+  it('throws for zero amount', () => {
     expect(() =>
       validatePaymentRequest({ ...validRequest, amount: 0 })
     ).toThrow(WhishValidationError);
@@ -152,6 +152,24 @@ describe('validatePaymentRequest', () => {
     ).toThrow(WhishValidationError);
   });
 
+  it('throws for Infinity amount', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, amount: Infinity })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for -Infinity amount', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, amount: -Infinity })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for non-number amount', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, amount: '100' as never })
+    ).toThrow(WhishValidationError);
+  });
+
   it('throws for invalid currency', () => {
     expect(() =>
       validatePaymentRequest({ ...validRequest, currency: 'EUR' as never })
@@ -164,9 +182,45 @@ describe('validatePaymentRequest', () => {
     ).toThrow(WhishValidationError);
   });
 
-  it('throws for invalid external ID type', () => {
+  it('throws for non-number external ID', () => {
     expect(() =>
       validatePaymentRequest({ ...validRequest, externalId: 'abc' as never })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for zero external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: 0 })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for negative external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: -1 })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for decimal external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: 123.45 })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for NaN external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: NaN })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for Infinity external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: Infinity })
+    ).toThrow(WhishValidationError);
+  });
+
+  it('throws for -Infinity external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: -Infinity })
     ).toThrow(WhishValidationError);
   });
 
@@ -174,6 +228,12 @@ describe('validatePaymentRequest', () => {
     expect(() =>
       validatePaymentRequest({ ...validRequest, externalId: Number.MAX_SAFE_INTEGER + 1 })
     ).toThrow(WhishValidationError);
+  });
+
+  it('accepts MAX_SAFE_INTEGER as a valid external ID', () => {
+    expect(() =>
+      validatePaymentRequest({ ...validRequest, externalId: Number.MAX_SAFE_INTEGER })
+    ).not.toThrow();
   });
 
   it('throws for invalid URL', () => {
