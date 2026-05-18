@@ -31,7 +31,6 @@ npm-debug.log*
 
 # npm
 .npm
-package-lock.json
 
 # Misc
 *.bak
